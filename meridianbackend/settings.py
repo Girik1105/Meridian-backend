@@ -129,9 +129,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Custom user model
 AUTH_USER_MODEL = 'api.User'
 
+# Frontend
+FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
+
 # CORS
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
+    FRONTEND_URL,
 ]
 CORS_ALLOW_CREDENTIALS = True
 
