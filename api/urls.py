@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views_auth, views_conversations
+from . import views_auth, views_conversations, views_career
 from .views_chat import ChatSendView, chat_stream_view
 
 urlpatterns = [
@@ -17,6 +17,11 @@ urlpatterns = [
     # Chat
     path("chat/send/", ChatSendView.as_view(), name="chat-send"),
     path("chat/stream/<uuid:conversation_id>/", chat_stream_view, name="chat-stream"),
+
+    # Career Paths
+    path("career-paths/", views_career.career_path_list, name="career-path-list"),
+    path("career-paths/generate/", views_career.career_path_generate, name="career-path-generate"),
+    path("career-paths/<uuid:pk>/select/", views_career.career_path_select, name="career-path-select"),
 
     # Conversations
     path("conversations/", views_conversations.conversation_list, name="conversation-list"),

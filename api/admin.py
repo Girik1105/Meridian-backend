@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from .models import User, UserProfile, Conversation, Message
+from .models import User, UserProfile, Conversation, Message, CareerPath
 
 
 @admin.register(User)
@@ -25,3 +25,9 @@ class ConversationAdmin(admin.ModelAdmin):
 class MessageAdmin(admin.ModelAdmin):
     list_display = ["conversation", "role", "created_at"]
     list_filter = ["role"]
+
+
+@admin.register(CareerPath)
+class CareerPathAdmin(admin.ModelAdmin):
+    list_display = ["title", "user", "relevance_score", "is_selected", "created_at"]
+    list_filter = ["is_selected"]

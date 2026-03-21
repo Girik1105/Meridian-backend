@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import User, UserProfile, Conversation, Message
+from .models import User, UserProfile, Conversation, Message, CareerPath
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -61,6 +61,17 @@ class ConversationDetailSerializer(ConversationSerializer):
 
     class Meta(ConversationSerializer.Meta):
         fields = ConversationSerializer.Meta.fields + ["messages"]
+
+
+class CareerPathSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CareerPath
+        fields = [
+            "id", "title", "description", "required_skills",
+            "estimated_timeline_months", "salary_range", "match_reasoning",
+            "relevance_score", "is_selected", "roi_data", "created_at", "updated_at",
+        ]
+        read_only_fields = fields
 
 
 class ChatSendSerializer(serializers.Serializer):

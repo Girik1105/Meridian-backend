@@ -74,3 +74,26 @@ class Message(models.Model):
 
     def __str__(self):
         return f"{self.role}: {self.content[:50]}"
+
+
+class CareerPath(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="career_paths")
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    required_skills = models.JSONField(default=list)
+    estimated_timeline_months = models.IntegerField()
+    salary_range = models.JSONField(default=dict)
+    match_reasoning = models.TextField()
+    relevance_score = models.FloatField()
+    is_selected = models.BooleanField(default=False)
+    roi_data = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "career_paths"
+        ordering = ["-relevance_score"]
+
+    def __str__(self):
+        return f"{self.title} - {self.user.username}"
