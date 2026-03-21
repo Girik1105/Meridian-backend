@@ -51,6 +51,7 @@ coverage.xml
 celerybeat-schedule
 celerybeat.pid
 
+
 # Claude
 CLAUDE.md
 agents.md

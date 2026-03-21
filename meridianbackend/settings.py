@@ -156,3 +156,6 @@ SIMPLE_JWT = {
 
 # Anthropic
 ANTHROPIC_API_KEY = config('ANTHROPIC_API_KEY', default='')
+
+# ASGI
+ASGI_APPLICATION = 'meridianbackend.asgi.application'

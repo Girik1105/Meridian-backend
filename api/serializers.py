@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import User, UserProfile
+from .models import User, UserProfile, Conversation, Message
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -40,3 +40,30 @@ class RegisterSerializer(serializers.Serializer):
             email=validated_data["email"],
             password=validated_data["password"],
         )
+
+
+class MessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = ["id", "role", "content", "metadata", "created_at"]
+        read_only_fields = fields
+
+
+class ConversationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Conversation
+        fields = ["id", "conversation_type", "title", "summary", "is_active", "created_at", "updated_at"]
+        read_only_fields = fields
+
+
+class ConversationDetailSerializer(ConversationSerializer):
+    messages = MessageSerializer(many=True, read_only=True)
+
+    class Meta(ConversationSerializer.Meta):
+        fields = ConversationSerializer.Meta.fields + ["messages"]
+
+
+class ChatSendSerializer(serializers.Serializer):
+    conversation_id = serializers.UUIDField(required=False)
+    conversation_type = serializers.ChoiceField(choices=Conversation.CONVERSATION_TYPES)
+    message = serializers.CharField()
