@@ -10,6 +10,8 @@ urlpatterns = [
     path("auth/refresh/", views_auth.refresh, name="auth-refresh"),
     path("auth/logout/", views_auth.logout, name="auth-logout"),
     path("auth/me/", views_auth.me, name="auth-me"),
+    path("auth/forgot-password/", views_auth.forgot_password, name="auth-forgot-password"),
+    path("auth/reset-password/", views_auth.reset_password, name="auth-reset-password"),
 
     # Profile
     path("profile/", views_auth.profile, name="profile"),

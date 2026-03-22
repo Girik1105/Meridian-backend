@@ -1,5 +1,8 @@
 from django.conf import settings
+from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
 
 
 def send_welcome_email(user):
@@ -85,6 +88,103 @@ def send_welcome_email(user):
               <p style="margin:0;color:#6B7280;font-size:13px;line-height:1.5;text-align:center;">
                 Meridian is an AI career mentor, not a licensed career counselor.<br>
                 Always cross-reference suggestions with human advisors.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+
+    send_mail(
+        subject=subject,
+        message=plain_text,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[user.email],
+        html_message=html_message,
+        fail_silently=True,
+    )
+
+
+def send_password_reset_email(user):
+    subject = "Reset Your Meridian Password"
+    frontend_url = settings.FRONTEND_URL
+
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+    reset_link = f"{frontend_url}/reset-password?uid={uid}&token={token}"
+
+    plain_text = (
+        f"Hi {user.first_name or user.username},\n\n"
+        "We received a request to reset your Meridian password.\n\n"
+        f"Reset your password: {reset_link}\n\n"
+        "This link expires in 24 hours. If you didn't request this, you can safely ignore this email.\n\n"
+        "— The Meridian Team"
+    )
+
+    html_message = f"""\
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background-color:#F9FAFB;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#F9FAFB;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#1A1B2F;padding:32px 40px;border-radius:12px 12px 0 0;">
+              <h1 style="margin:0;color:#E8973A;font-size:28px;font-weight:700;letter-spacing:-0.5px;">
+                Meridian
+              </h1>
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td style="background-color:#FFFFFF;padding:40px;">
+              <h2 style="margin:0 0 16px;color:#1A1B2F;font-size:22px;font-weight:600;">
+                Reset your password
+              </h2>
+              <p style="margin:0 0 24px;color:#374151;font-size:16px;line-height:1.6;">
+                We received a request to reset the password for your Meridian account. Click the button below to choose a new password.
+              </p>
+              <!-- CTA Button -->
+              <table cellpadding="0" cellspacing="0" style="margin:0 auto 24px;">
+                <tr>
+                  <td style="border-radius:8px;background-color:#E8973A;">
+                    <a href="{reset_link}"
+                       style="display:inline-block;padding:14px 32px;color:#FFFFFF;font-size:16px;font-weight:600;text-decoration:none;border-radius:8px;">
+                      Reset Password
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <!-- Info callout -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#FBE8D0;border-radius:8px;">
+                <tr>
+                  <td style="padding:16px 20px;">
+                    <p style="margin:0;color:#1A1B2F;font-size:14px;line-height:1.5;">
+                      This link expires in <strong>24 hours</strong>. If you didn't request a password reset, you can safely ignore this email.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <!-- Divider -->
+          <tr>
+            <td style="background-color:#FFFFFF;padding:0 40px;">
+              <hr style="border:none;border-top:1px solid #D1D5DB;margin:0;">
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#FFFFFF;padding:24px 40px 32px;border-radius:0 0 12px 12px;">
+              <p style="margin:0;color:#6B7280;font-size:13px;line-height:1.5;text-align:center;">
+                If the button above doesn't work, copy and paste this link into your browser:<br>
+                <a href="{reset_link}" style="color:#E8973A;word-break:break-all;">{reset_link}</a>
               </p>
             </td>
           </tr>
