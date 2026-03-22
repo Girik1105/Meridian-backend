@@ -13,26 +13,31 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.CreateModel(
-            name='CareerPath',
-            fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('title', models.CharField(max_length=255)),
-                ('description', models.TextField()),
-                ('required_skills', models.JSONField(default=list)),
-                ('estimated_timeline_months', models.IntegerField()),
-                ('salary_range', models.JSONField(default=dict)),
-                ('match_reasoning', models.TextField()),
-                ('relevance_score', models.FloatField()),
-                ('is_selected', models.BooleanField(default=False)),
-                ('roi_data', models.JSONField(default=dict)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='career_paths', to=settings.AUTH_USER_MODEL)),
+        migrations.SeparateDatabaseAndState(
+            state_operations=[
+                migrations.CreateModel(
+                    name='CareerPath',
+                    fields=[
+                        ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                        ('title', models.CharField(max_length=255)),
+                        ('description', models.TextField()),
+                        ('required_skills', models.JSONField(default=list)),
+                        ('estimated_timeline_months', models.IntegerField()),
+                        ('salary_range', models.JSONField(default=dict)),
+                        ('match_reasoning', models.TextField()),
+                        ('relevance_score', models.FloatField()),
+                        ('is_selected', models.BooleanField(default=False)),
+                        ('roi_data', models.JSONField(default=dict)),
+                        ('created_at', models.DateTimeField(auto_now_add=True)),
+                        ('updated_at', models.DateTimeField(auto_now=True)),
+                        ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='career_paths', to=settings.AUTH_USER_MODEL)),
+                    ],
+                    options={
+                        'db_table': 'career_paths',
+                        'ordering': ['-relevance_score'],
+                    },
+                ),
             ],
-            options={
-                'db_table': 'career_paths',
-                'ordering': ['-relevance_score'],
-            },
+            database_operations=[],
         ),
     ]
