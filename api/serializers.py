@@ -114,3 +114,4 @@ class ChatSendSerializer(serializers.Serializer):
     conversation_id = serializers.UUIDField(required=False, allow_null=True)
     conversation_type = serializers.ChoiceField(choices=Conversation.CONVERSATION_TYPES)
     message = serializers.CharField()
+    metadata = serializers.JSONField(required=False, default=dict)

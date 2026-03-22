@@ -50,6 +50,7 @@ class Conversation(models.Model):
     conversation_type = models.CharField(max_length=20, choices=CONVERSATION_TYPES)
     title = models.CharField(max_length=255, blank=True, default="")
     summary = models.TextField(blank=True, default="")
+    metadata = models.JSONField(default=dict, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

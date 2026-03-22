@@ -46,6 +46,41 @@ class ContextBuilder:
         )
         return system_prompt
 
+    async def build_for_taster_help(self, user_profile, messages_qs, taster, module_id, summary=None):
+        """Build context for the in-taster help chatbot."""
+        profile_data = user_profile.profile_data or {}
+        profile_json = json.dumps(profile_data, indent=2) if profile_data else "{}"
+
+        modules = taster.taster_content.get("modules", [])
+        current_module = None
+        for m in modules:
+            if m.get("id") == module_id:
+                current_module = m
+                break
+
+        if current_module is None:
+            current_module = modules[0] if modules else {
+                "title": "Unknown", "type": "unknown", "content": "No content available."
+            }
+
+        taster_overview = "\n".join(
+            f"- {m.get('title', 'Untitled')} ({m.get('type', 'unknown')})"
+            for m in modules
+        )
+
+        system_prompt = _load_prompt("taster_help").format(
+            profile_data=profile_json,
+            skill_name=taster.skill_name,
+            career_path_title=taster.career_path.title if taster.career_path else "N/A",
+            module_title=current_module.get("title", "Unknown"),
+            module_type=current_module.get("type", "unknown"),
+            module_content=current_module.get("content", "No content available."),
+            taster_overview=taster_overview,
+        )
+
+        conversation_messages = await self._format_messages(messages_qs, summary)
+        return system_prompt, conversation_messages
+
     def build_for_assessment(self, user_profile, skill_taster, responses):
         profile_data = user_profile.profile_data or {}
         profile_json = json.dumps(profile_data, indent=2) if profile_data else "{}"
