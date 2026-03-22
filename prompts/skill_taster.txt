@@ -30,21 +30,48 @@ Respond with ONLY valid JSON. No markdown, no explanation, no wrapping. Use this
       "title": "Module title here",
       "type": "read",
       "content": "Full module content here. Can be multiple paragraphs.",
-      "estimated_minutes": 5
+      "estimated_minutes": 5,
+      "resources": [
+        {{
+          "title": "Resource title",
+          "provider": "Provider name (e.g., MDN, freeCodeCamp)",
+          "url": "https://...",
+          "type": "article",
+          "estimated_minutes": 5
+        }}
+      ]
     }},
     {{
       "id": "mod_2",
       "title": "Module title here",
       "type": "exercise",
       "content": "Exercise instructions and context. Include the problem to solve.",
-      "estimated_minutes": 10
+      "estimated_minutes": 10,
+      "resources": [
+        {{
+          "title": "Resource title",
+          "provider": "Provider name",
+          "url": "https://...",
+          "type": "tutorial",
+          "estimated_minutes": 10
+        }}
+      ]
     }},
     {{
       "id": "mod_3",
       "title": "Module title here",
       "type": "reflect",
       "content": "Reflection prompt or question.",
-      "estimated_minutes": 5
+      "estimated_minutes": 5,
+      "resources": [
+        {{
+          "title": "Resource title",
+          "provider": "Provider name",
+          "url": "https://...",
+          "type": "article",
+          "estimated_minutes": 5
+        }}
+      ]
     }}
   ],
   "reflection_prompts": [
@@ -62,4 +89,9 @@ Respond with ONLY valid JSON. No markdown, no explanation, no wrapping. Use this
 - Total estimated_minutes across modules should be approximately 30
 - Make it genuinely educational — the user should learn something real
 - Include 2–3 reflection prompts that help the user gauge their own interest and aptitude
+- Each module must include a "resources" array with 2-3 curated external resources relevant to that module's topic
+- Resources should be real, well-known free/low-cost learning platforms (MDN, freeCodeCamp, Khan Academy, W3Schools, Codecademy, Coursera free courses, edX, MIT OpenCourseWare, etc.)
+- Each resource needs: "title" (descriptive name), "provider" (platform name), "url" (real URL to the resource — use your best knowledge of actual URLs), "type" (one of: "article", "tutorial", "video", "exercise", "documentation"), "estimated_minutes" (reading/completion time)
+- Match resources to the user's learning style: more hands-on resources for hands-on learners, more reading for readers
+- Resources should be genuinely useful follow-ups to the module content, not generic links
 - Output ONLY the JSON object, nothing else

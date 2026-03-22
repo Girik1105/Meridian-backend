@@ -42,7 +42,29 @@ Respond with ONLY valid JSON. No markdown, no explanation, no wrapping:
     "Concrete, actionable next step if they want to pursue this skill",
     "Alternative suggestion if the friction points were significant"
   ],
-  "disclaimer": "This assessment is based on a 30-minute sample exercise. It reflects your initial engagement with {skill_name}, not your long-term potential. A real career decision deserves more exploration — consider trying additional exercises, talking to professionals in the field, or exploring free introductory courses."
+  "disclaimer": "This assessment is based on a 30-minute sample exercise. It reflects your initial engagement with {skill_name}, not your long-term potential. A real career decision deserves more exploration — consider trying additional exercises, talking to professionals in the field, or exploring free introductory courses.",
+  "learning_plan": {{
+    "summary": "One sentence overview of the recommended learning path",
+    "phases": [
+      {{
+        "title": "Phase name (e.g., 'Foundations')",
+        "weeks": "1-2",
+        "goal": "What the user should achieve in this phase",
+        "resources": [
+          {{
+            "title": "Resource name",
+            "provider": "Platform name",
+            "url": "https://...",
+            "cost": "Free",
+            "estimated_hours": 10,
+            "type": "course"
+          }}
+        ]
+      }}
+    ],
+    "total_estimated_weeks": 8,
+    "total_estimated_cost": "$0-$50"
+  }}
 }}
 
 ## Rules
@@ -52,4 +74,12 @@ Respond with ONLY valid JSON. No markdown, no explanation, no wrapping:
 - Strengths and friction_points should each have 1–3 items based on what you actually observed
 - next_steps should be practical and specific to this skill and the user's situation
 - The disclaimer must always be included and must mention the 30-minute limitation
+- Include a "learning_plan" object with a structured roadmap for the user to continue learning this skill
+- The plan should have exactly 3 phases: foundations, practice/projects, and portfolio/job prep
+- Each phase should have 2-3 curated resources from well-known free or low-cost platforms
+- Resources should be real courses, tutorials, or certifications from: freeCodeCamp, Coursera (free audit), edX, Khan Academy, Codecademy, MIT OCW, Google Career Certificates, Udemy (budget-friendly), YouTube channels, official documentation
+- Each resource needs: "title", "provider", "url" (real URL), "cost" ("Free" or estimated price), "estimated_hours", "type" (one of: "course", "tutorial", "certification", "project", "book", "documentation")
+- Match the plan to the user's constraints: if they said they can only spend 5 hours/week, the timeline should reflect that. If they said "free only" budget, all resources should be free.
+- total_estimated_weeks and total_estimated_cost should be realistic summaries
+- The plan should connect to the career path — not just "learn this skill" but "learn this skill to get closer to [career path title]"
 - Output ONLY the JSON object, nothing else
