@@ -204,6 +204,7 @@ async def chat_stream_view(request, conversation_id):
             await profile.asave()
             done_data["profile_update"] = profile.profile_data
             done_data["onboarding_completed"] = profile.onboarding_completed
+            done_data["journey_stage"] = profile.journey_stage
 
         yield f"data: {json.dumps({'type': 'done', 'data': done_data})}\n\n"
 
