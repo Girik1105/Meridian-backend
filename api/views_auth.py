@@ -24,17 +24,21 @@ def _set_auth_cookies(response, refresh):
     access_lifetime = settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"]
     refresh_lifetime = settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"]
 
+    cookie_kwargs = {**COOKIE_DEFAULTS}
+    if not settings.DEBUG:
+        cookie_kwargs["partitioned"] = True
+
     response.set_cookie(
         "access",
         str(refresh.access_token),
         max_age=int(access_lifetime.total_seconds()),
-        **COOKIE_DEFAULTS,
+        **cookie_kwargs,
     )
     response.set_cookie(
         "refresh",
         str(refresh),
         max_age=int(refresh_lifetime.total_seconds()),
-        **COOKIE_DEFAULTS,
+        **cookie_kwargs,
     )
     return response
 
@@ -83,6 +87,7 @@ def login(request):
 
 
 @api_view(["POST"])
+@authentication_classes([])
 @permission_classes([AllowAny])
 def refresh(request):
     raw_refresh = request.COOKIES.get("refresh")
@@ -117,6 +122,7 @@ def refresh(request):
 
 
 @api_view(["POST"])
+@authentication_classes([])
 @permission_classes([AllowAny])
 def logout(request):
     response = Response({"detail": "Logged out."})
