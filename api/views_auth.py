@@ -24,21 +24,17 @@ def _set_auth_cookies(response, refresh):
     access_lifetime = settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"]
     refresh_lifetime = settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"]
 
-    cookie_kwargs = {**COOKIE_DEFAULTS}
-    if not settings.DEBUG:
-        cookie_kwargs["partitioned"] = True
-
     response.set_cookie(
         "access",
         str(refresh.access_token),
         max_age=int(access_lifetime.total_seconds()),
-        **cookie_kwargs,
+        **COOKIE_DEFAULTS,
     )
     response.set_cookie(
         "refresh",
         str(refresh),
         max_age=int(refresh_lifetime.total_seconds()),
-        **cookie_kwargs,
+        **COOKIE_DEFAULTS,
     )
     return response
 
