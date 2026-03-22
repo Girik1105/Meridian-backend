@@ -103,22 +103,31 @@ def formatted_messages(messages):
 
 
 def extract_structured_data(response_text):
-    """Extract <profile_update> JSON from Claude's response.
-    Returns (clean_text, profile_update_dict_or_None).
+    """Extract <profile_update> and <ui_widget> JSON from Claude's response.
+    Returns (clean_text, profile_update_dict_or_None, widget_spec_dict_or_None).
     """
-    pattern = r"<profile_update>(.*?)</profile_update>"
-    match = re.search(pattern, response_text, re.DOTALL)
+    profile_pattern = r"<profile_update>(.*?)</profile_update>"
+    profile_match = re.search(profile_pattern, response_text, re.DOTALL)
+    profile_update = None
+    if profile_match:
+        try:
+            profile_update = json.loads(profile_match.group(1).strip())
+        except json.JSONDecodeError:
+            pass
 
-    if not match:
-        return response_text, None
+    widget_pattern = r"<ui_widget>(.*?)</ui_widget>"
+    widget_match = re.search(widget_pattern, response_text, re.DOTALL)
+    widget_spec = None
+    if widget_match:
+        try:
+            widget_spec = json.loads(widget_match.group(1).strip())
+        except json.JSONDecodeError:
+            pass
 
-    try:
-        profile_update = json.loads(match.group(1).strip())
-    except json.JSONDecodeError:
-        return response_text, None
+    clean_text = re.sub(profile_pattern, "", response_text, flags=re.DOTALL)
+    clean_text = re.sub(widget_pattern, "", clean_text, flags=re.DOTALL).strip()
 
-    clean_text = re.sub(pattern, "", response_text, flags=re.DOTALL).strip()
-    return clean_text, profile_update
+    return clean_text, profile_update, widget_spec
 
 
 def merge_profile_data(existing, update):
