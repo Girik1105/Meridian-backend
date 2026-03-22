@@ -78,6 +78,14 @@ WSGI_APPLICATION = 'meridianbackend.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 
+if DEBUG:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
+
 POSTGRES_DB = config("POSTGRES_DB", default=None)
 POSTGRES_PASSWORD = config("POSTGRES_PASSWORD", default=None)
 POSTGRES_USER = config("POSTGRES_USER", default=None)

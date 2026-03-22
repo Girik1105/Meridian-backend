@@ -13,8 +13,9 @@ urlpatterns = [
     path("auth/forgot-password/", views_auth.forgot_password, name="auth-forgot-password"),
     path("auth/reset-password/", views_auth.reset_password, name="auth-reset-password"),
 
-    # Profile
+    # Profile & Session State
     path("profile/", views_auth.profile, name="profile"),
+    path("session-state/", views_auth.session_state, name="session-state"),
 
     # Chat
     path("chat/send/", ChatSendView.as_view(), name="chat-send"),
@@ -32,6 +33,7 @@ urlpatterns = [
     path("tasters/<uuid:pk>/start/", views_taster.taster_start, name="taster-start"),
     path("tasters/<uuid:pk>/respond/", views_taster.taster_respond, name="taster-respond"),
     path("tasters/<uuid:pk>/complete/", views_taster.taster_complete, name="taster-complete"),
+    path("tasters/<uuid:pk>/retry/", views_taster.taster_retry, name="taster-retry"),
     path("tasters/<uuid:pk>/assessment/", views_taster.taster_assessment, name="taster-assessment"),
 
     # Conversations

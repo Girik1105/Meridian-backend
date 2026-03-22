@@ -10,6 +10,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 
 from .emails import send_password_reset_email
+from .generation_utils import recover_stuck_generations
+from .models import CareerPath, Conversation, SkillTaster
 from .serializers import RegisterSerializer, UserSerializer, UserProfileSerializer
 
 COOKIE_DEFAULTS = {
@@ -213,3 +215,88 @@ def me(request):
 @permission_classes([IsAuthenticated])
 def profile(request):
     return Response(UserProfileSerializer(request.user.profile).data)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def session_state(request):
+    """Unified snapshot of user's current state for frontend restoration."""
+    recover_stuck_generations(request.user)
+
+    profile = request.user.profile
+    profile.refresh_from_db()
+
+    # Active conversation (most recent)
+    active_conv = Conversation.objects.filter(
+        user=request.user, is_active=True
+    ).order_by("-updated_at").first()
+
+    active_conversation = None
+    if active_conv:
+        active_conversation = {
+            "id": str(active_conv.id),
+            "conversation_type": active_conv.conversation_type,
+            "title": active_conv.title,
+        }
+
+    # Career paths status
+    career_paths_count = CareerPath.objects.filter(user=request.user).count()
+    if profile.journey_stage == "generating_paths":
+        career_paths_status = "generating"
+    elif career_paths_count > 0:
+        career_paths_status = "ready"
+    else:
+        career_paths_status = "none"
+
+    # Selected career path
+    selected_path = CareerPath.objects.filter(
+        user=request.user, is_selected=True
+    ).first()
+    selected_career_path = None
+    if selected_path:
+        selected_career_path = {
+            "id": str(selected_path.id),
+            "title": selected_path.title,
+        }
+
+    # Pending tasters (still generating)
+    pending_tasters = list(
+        SkillTaster.objects.filter(
+            user=request.user, status="generating"
+        ).values("id", "skill_name", "status", "created_at")
+    )
+    for t in pending_tasters:
+        t["id"] = str(t["id"])
+
+    # Active taster (in progress)
+    active_taster_obj = SkillTaster.objects.filter(
+        user=request.user, status="in_progress"
+    ).first()
+    active_taster = None
+    if active_taster_obj:
+        active_taster = {
+            "id": str(active_taster_obj.id),
+            "skill_name": active_taster_obj.skill_name,
+            "started_at": active_taster_obj.started_at,
+        }
+
+    # Failed tasters (can be retried)
+    failed_tasters = list(
+        SkillTaster.objects.filter(
+            user=request.user, status="generation_failed"
+        ).values("id", "skill_name", "status")
+    )
+    for t in failed_tasters:
+        t["id"] = str(t["id"])
+
+    return Response({
+        "journey_stage": profile.journey_stage,
+        "onboarding_completed": profile.onboarding_completed,
+        "active_conversation": active_conversation,
+        "career_paths_status": career_paths_status,
+        "career_paths_count": career_paths_count,
+        "selected_career_path": selected_career_path,
+        "pending_tasters": pending_tasters,
+        "active_taster": active_taster,
+        "failed_tasters": failed_tasters,
+    })

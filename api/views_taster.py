@@ -10,6 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .context_builder import ContextBuilder
+from .generation_utils import GENERATION_TIMEOUT, recover_stuck_generations
 from .models import CareerPath, SkillTaster, TasterResponse
 from .serializers import (
     SkillTasterDetailSerializer,
@@ -91,6 +92,24 @@ def taster_generate(request):
             {"detail": "Selected career path not found."}, status=404
         )
 
+    # Dedup: check for existing taster with same skill + career_path + user
+    existing = SkillTaster.objects.filter(
+        user=request.user,
+        career_path=career_path,
+        skill_name=skill_name,
+    ).first()
+
+    if existing:
+        if existing.status == "generating":
+            return Response(
+                {"id": str(existing.id), "status": "generating", "skill_name": skill_name},
+                status=202,
+            )
+        elif existing.status == "generation_failed":
+            existing.delete()
+        elif existing.status in ("not_started", "in_progress", "completed"):
+            return Response(SkillTasterSerializer(existing).data, status=200)
+
     profile = request.user.profile
     builder = ContextBuilder()
     system_prompt = builder.build_for_skill_taster(profile, career_path, skill_name)
@@ -118,9 +137,48 @@ def taster_generate(request):
     )
 
 
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def taster_retry(request, pk):
+    """Retry generation for a failed taster."""
+    try:
+        taster = SkillTaster.objects.get(id=pk, user=request.user)
+    except SkillTaster.DoesNotExist:
+        return Response({"detail": "Skill taster not found."}, status=404)
+
+    if taster.status != "generation_failed":
+        return Response(
+            {"detail": "Only failed tasters can be retried."}, status=400
+        )
+
+    profile = request.user.profile
+    builder = ContextBuilder()
+    system_prompt = builder.build_for_skill_taster(
+        profile, taster.career_path, taster.skill_name
+    )
+
+    taster.status = "generating"
+    taster.taster_content = {}
+    taster.save(update_fields=["status", "taster_content", "updated_at"])
+
+    thread = threading.Thread(
+        target=_generate_taster_content,
+        args=(taster.id, system_prompt, taster.skill_name),
+        daemon=True,
+    )
+    thread.start()
+
+    return Response(
+        {"id": str(taster.id), "status": "generating", "skill_name": taster.skill_name},
+        status=202,
+    )
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def taster_list(request):
+    recover_stuck_generations(request.user)
+
     tasters = SkillTaster.objects.filter(user=request.user)
 
     career_path_id = request.query_params.get("career_path_id")
@@ -133,6 +191,8 @@ def taster_list(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def taster_detail(request, pk):
+    recover_stuck_generations(request.user)
+
     try:
         taster = SkillTaster.objects.get(id=pk, user=request.user)
     except SkillTaster.DoesNotExist:
@@ -248,6 +308,12 @@ def taster_assessment(request, pk):
         return Response(
             {"detail": "Taster must be completed to view assessment."}, status=400
         )
+
+    # Check for stuck assessment generation
+    if taster.assessment == {"status": "generating"} and taster.completed_at:
+        if timezone.now() - taster.completed_at > GENERATION_TIMEOUT:
+            taster.assessment = {"error": "Assessment generation timed out. Please retry."}
+            taster.save(update_fields=["assessment", "updated_at"])
 
     if not taster.assessment:
         return Response({"detail": "Assessment not available."}, status=404)

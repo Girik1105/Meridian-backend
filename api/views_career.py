@@ -9,6 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .context_builder import _load_prompt
+from .generation_utils import recover_stuck_generations
 from .models import CareerPath
 from .serializers import CareerPathSerializer
 
@@ -67,7 +68,11 @@ def _generate_career_paths(user_id, system_prompt):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def career_path_generate(request):
+    recover_stuck_generations(request.user)
+
     profile = request.user.profile
+    profile.refresh_from_db()
+
     if not profile.onboarding_completed:
         return Response({"detail": "Complete onboarding first."}, status=400)
 
@@ -104,6 +109,11 @@ def career_path_generate(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def career_path_list(request):
+    recover_stuck_generations(request.user)
+
+    profile = request.user.profile
+    profile.refresh_from_db()
+
     paths = CareerPath.objects.filter(user=request.user)
 
     sort_by = request.query_params.get("sort_by")
@@ -114,8 +124,19 @@ def career_path_list(request):
     elif sort_by == "fastest":
         paths = sorted(paths, key=lambda p: p.estimated_timeline_months)
 
+    # Determine generation status
+    if profile.journey_stage == "generating_paths":
+        generation_status = "generating"
+    elif isinstance(paths, list):
+        generation_status = "ready" if paths else "none"
+    else:
+        generation_status = "ready" if paths.exists() else "none"
+
     serializer = CareerPathSerializer(paths, many=True)
-    return Response(serializer.data)
+    return Response({
+        "generation_status": generation_status,
+        "paths": serializer.data,
+    })
 
 
 @api_view(["POST"])
