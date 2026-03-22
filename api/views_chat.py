@@ -3,6 +3,7 @@ import json
 import logging
 
 import anthropic
+from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.http import StreamingHttpResponse
 from rest_framework import status
@@ -11,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .context_builder import ContextBuilder, extract_structured_data, merge_profile_data
-from .models import Conversation, Message
+from .models import Conversation, Message, UserProfile
 from .serializers import ChatSendSerializer
 
 logger = logging.getLogger(__name__)
@@ -65,7 +66,7 @@ async def chat_stream_view(request, conversation_id):
 
     auth = CookieJWTAuthentication()
     try:
-        result = auth.authenticate(request)
+        result = await sync_to_async(auth.authenticate)(request)
         if result is None:
             return StreamingHttpResponse(
                 _error_event("Authentication required."),
@@ -91,7 +92,7 @@ async def chat_stream_view(request, conversation_id):
             status=404,
         )
 
-    profile = await user.profile.__class__.objects.aget(user=user)
+    profile = await UserProfile.objects.aget(user=user)
 
     # Summarize if needed (>20 messages and no summary yet)
     message_count = await conversation.messages.acount()
@@ -198,6 +199,7 @@ async def chat_stream_view(request, conversation_id):
 
             if onboarding_completed:
                 profile.onboarding_completed = True
+                profile.journey_stage = "career_discovery"
 
             await profile.asave()
             done_data["profile_update"] = profile.profile_data

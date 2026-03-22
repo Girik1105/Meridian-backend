@@ -1,12 +1,12 @@
 from rest_framework import serializers
 
-from .models import User, UserProfile, Conversation, Message
+from .models import User, UserProfile, Conversation, Message, CareerPath
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ["id", "profile_data", "onboarding_completed", "profile_version", "created_at", "updated_at"]
+        fields = ["id", "profile_data", "onboarding_completed", "journey_stage", "profile_version", "created_at", "updated_at"]
         read_only_fields = fields
 
 
@@ -63,7 +63,18 @@ class ConversationDetailSerializer(ConversationSerializer):
         fields = ConversationSerializer.Meta.fields + ["messages"]
 
 
+class CareerPathSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CareerPath
+        fields = [
+            "id", "title", "description", "required_skills",
+            "estimated_timeline_months", "salary_range", "match_reasoning",
+            "relevance_score", "is_selected", "created_at", "updated_at",
+        ]
+        read_only_fields = fields
+
+
 class ChatSendSerializer(serializers.Serializer):
-    conversation_id = serializers.UUIDField(required=False)
+    conversation_id = serializers.UUIDField(required=False, allow_null=True)
     conversation_type = serializers.ChoiceField(choices=Conversation.CONVERSATION_TYPES)
     message = serializers.CharField()
