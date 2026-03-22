@@ -10,13 +10,10 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
-import os
 from datetime import timedelta
 from pathlib import Path
 
 from decouple import config, Csv
-
-import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -81,11 +78,11 @@ WSGI_APPLICATION = 'meridianbackend.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 
-POSTGRES_DB = os.environ.get("POSTGRES_DB") #database name
-POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD") # database user password
-POSTGRES_USER = os.environ.get("POSTGRES_USER") # database username
-POSTGRES_HOST = os.environ.get("POSTGRES_HOST") # database host
-POSTGRES_PORT = os.environ.get("POSTGRES_PORT") # database port
+POSTGRES_DB = config("POSTGRES_DB", default=None)
+POSTGRES_PASSWORD = config("POSTGRES_PASSWORD", default=None)
+POSTGRES_USER = config("POSTGRES_USER", default=None)
+POSTGRES_HOST = config("POSTGRES_HOST", default=None)
+POSTGRES_PORT = config("POSTGRES_PORT", default=None)
 
 POSTGRES_READY = (
     POSTGRES_DB is not None
