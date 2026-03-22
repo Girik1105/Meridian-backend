@@ -95,11 +95,13 @@ class CareerPath(models.Model):
     match_reasoning = models.TextField()
     relevance_score = models.FloatField()
     is_selected = models.BooleanField(default=False)
+    roi_data = models.JSONField(default=dict)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = "career_paths"
+        ordering = ["-relevance_score"]
 
     def __str__(self):
         return f"{self.title} - {self.user.username}"

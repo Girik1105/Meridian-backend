@@ -69,7 +69,7 @@ class CareerPathSerializer(serializers.ModelSerializer):
         fields = [
             "id", "title", "description", "required_skills",
             "estimated_timeline_months", "salary_range", "match_reasoning",
-            "relevance_score", "is_selected", "created_at", "updated_at",
+            "relevance_score", "is_selected", "roi_data", "created_at", "updated_at",
         ]
         read_only_fields = fields
 

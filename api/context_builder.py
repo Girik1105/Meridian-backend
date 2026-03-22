@@ -25,6 +25,15 @@ class ContextBuilder:
 
         return system_prompt, conversation_messages
 
+    async def build_for_career_discovery(self, user_profile):
+        profile_data = user_profile.profile_data or {}
+        profile_json = json.dumps(profile_data, indent=2) if profile_data else "{}"
+        location = profile_data.get("constraints", {}).get("location", "United States")
+        system_prompt = _load_prompt("career_discovery").format(
+            profile_data=profile_json, location=location
+        )
+        return system_prompt
+
     async def _format_messages(self, messages_qs, summary=None):
         # Get last MAX_MESSAGES ordered by created_at
         count = await messages_qs.acount()
