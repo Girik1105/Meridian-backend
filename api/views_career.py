@@ -18,6 +18,12 @@ def career_path_generate(request):
     if not profile.onboarding_completed:
         return Response({"detail": "Complete onboarding first."}, status=400)
 
+    # Return existing paths if already generated (skip expensive AI call)
+    force = request.query_params.get("force") == "true"
+    existing = CareerPath.objects.filter(user=request.user)
+    if existing.exists() and not force:
+        return Response(CareerPathSerializer(existing, many=True).data, status=200)
+
     profile_data = profile.profile_data or {}
     system_prompt = _load_prompt("career_discovery").format(
         profile_data=json.dumps(profile_data, indent=2),
