@@ -15,7 +15,7 @@ from .serializers import RegisterSerializer, UserSerializer, UserProfileSerializ
 COOKIE_DEFAULTS = {
     "httponly": True,
     "secure": not settings.DEBUG,
-    "samesite": "Lax",
+    "samesite": "None" if not settings.DEBUG else "Lax",
     "path": "/",
 }
 
