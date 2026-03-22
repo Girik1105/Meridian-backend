@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import User, UserProfile, Conversation, Message, CareerPath
+from .models import User, UserProfile, Conversation, Message, CareerPath, SkillTaster, TasterResponse
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -72,6 +72,42 @@ class CareerPathSerializer(serializers.ModelSerializer):
             "relevance_score", "is_selected", "roi_data", "created_at", "updated_at",
         ]
         read_only_fields = fields
+
+
+class TasterResponseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TasterResponse
+        fields = ["id", "module_id", "user_response", "time_spent_seconds", "created_at"]
+        read_only_fields = fields
+
+
+class SkillTasterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SkillTaster
+        fields = [
+            "id", "career_path", "skill_name", "taster_content",
+            "status", "started_at", "completed_at", "created_at", "updated_at",
+        ]
+        read_only_fields = fields
+
+
+class SkillTasterDetailSerializer(SkillTasterSerializer):
+    responses = TasterResponseSerializer(many=True, read_only=True)
+    assessment = serializers.JSONField(read_only=True)
+
+    class Meta(SkillTasterSerializer.Meta):
+        fields = SkillTasterSerializer.Meta.fields + ["responses", "assessment"]
+
+
+class TasterGenerateSerializer(serializers.Serializer):
+    career_path_id = serializers.UUIDField(required=True)
+    skill_name = serializers.CharField(required=True)
+
+
+class TasterRespondSerializer(serializers.Serializer):
+    module_id = serializers.CharField(required=True)
+    user_response = serializers.CharField(required=True)
+    time_spent_seconds = serializers.IntegerField(default=0)
 
 
 class ChatSendSerializer(serializers.Serializer):
