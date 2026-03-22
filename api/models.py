@@ -15,6 +15,7 @@ class User(AbstractUser):
 
 JOURNEY_STAGES = [
     ("onboarding", "Onboarding"),
+    ("generating_paths", "Generating Paths"),
     ("career_discovery", "Career Discovery"),
     ("skill_taster", "Skill Taster"),
 ]
@@ -110,9 +111,11 @@ class CareerPath(models.Model):
 
 class SkillTaster(models.Model):
     STATUS_CHOICES = [
+        ("generating", "Generating"),
         ("not_started", "Not Started"),
         ("in_progress", "In Progress"),
         ("completed", "Completed"),
+        ("generation_failed", "Generation Failed"),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

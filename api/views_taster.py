@@ -1,4 +1,6 @@
 import json
+import logging
+import threading
 
 import anthropic
 from django.conf import settings
@@ -15,6 +17,60 @@ from .serializers import (
     TasterGenerateSerializer,
     TasterRespondSerializer,
 )
+
+logger = logging.getLogger(__name__)
+
+
+def _generate_taster_content(taster_id, system_prompt, skill_name):
+    """Background thread: call Claude and update the taster record."""
+    try:
+        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=4000,
+            system=system_prompt,
+            messages=[
+                {"role": "user", "content": f"Generate a 30-minute skill taster for: {skill_name}"}
+            ],
+        )
+
+        taster_content = json.loads(response.content[0].text)
+
+        SkillTaster.objects.filter(id=taster_id).update(
+            taster_content=taster_content,
+            status="not_started",
+        )
+    except Exception:
+        logger.exception("Failed to generate taster %s", taster_id)
+        SkillTaster.objects.filter(id=taster_id).update(
+            status="generation_failed",
+            taster_content={"error": "Failed to generate skill taster. Please try again."},
+        )
+
+
+def _generate_assessment(taster_id, system_prompt):
+    """Background thread: call Claude for assessment and update the taster record."""
+    try:
+        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+        ai_response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=2000,
+            system=system_prompt,
+            messages=[
+                {"role": "user", "content": "Generate an honest assessment of my skill taster performance."}
+            ],
+        )
+
+        assessment = json.loads(ai_response.content[0].text)
+
+        SkillTaster.objects.filter(id=taster_id).update(
+            assessment=assessment,
+        )
+    except Exception:
+        logger.exception("Failed to generate assessment for taster %s", taster_id)
+        SkillTaster.objects.filter(id=taster_id).update(
+            assessment={"error": "Failed to generate assessment."},
+        )
 
 
 @api_view(["POST"])
@@ -39,31 +95,27 @@ def taster_generate(request):
     builder = ContextBuilder()
     system_prompt = builder.build_for_skill_taster(profile, career_path, skill_name)
 
-    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-    response = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=4000,
-        system=system_prompt,
-        messages=[
-            {"role": "user", "content": f"Generate a 30-minute skill taster for: {skill_name}"}
-        ],
-    )
-
-    try:
-        taster_content = json.loads(response.content[0].text)
-    except (json.JSONDecodeError, IndexError):
-        return Response(
-            {"detail": "Failed to parse skill taster from AI response."}, status=502
-        )
-
+    # Create taster immediately with "generating" status
     taster = SkillTaster.objects.create(
         user=request.user,
         career_path=career_path,
         skill_name=skill_name,
-        taster_content=taster_content,
+        taster_content={},
+        status="generating",
     )
 
-    return Response(SkillTasterDetailSerializer(taster).data, status=201)
+    # Kick off Claude call in background thread
+    thread = threading.Thread(
+        target=_generate_taster_content,
+        args=(taster.id, system_prompt, skill_name),
+        daemon=True,
+    )
+    thread.start()
+
+    return Response(
+        {"id": str(taster.id), "status": "generating", "skill_name": skill_name},
+        status=202,
+    )
 
 
 @api_view(["GET"])
@@ -165,31 +217,23 @@ def taster_complete(request, pk):
 
     taster.status = "completed"
     taster.completed_at = timezone.now()
+    taster.assessment = {"status": "generating"}
+    taster.save(update_fields=["status", "completed_at", "assessment", "updated_at"])
 
-    # Generate assessment
+    # Generate assessment in background
     profile = request.user.profile
     responses = list(taster.responses.all())
     builder = ContextBuilder()
     system_prompt = builder.build_for_assessment(profile, taster, responses)
 
-    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-    ai_response = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=2000,
-        system=system_prompt,
-        messages=[
-            {"role": "user", "content": "Generate an honest assessment of my skill taster performance."}
-        ],
+    thread = threading.Thread(
+        target=_generate_assessment,
+        args=(taster.id, system_prompt),
+        daemon=True,
     )
+    thread.start()
 
-    try:
-        taster.assessment = json.loads(ai_response.content[0].text)
-    except (json.JSONDecodeError, IndexError):
-        taster.assessment = {"error": "Failed to generate assessment."}
-
-    taster.save(update_fields=["status", "completed_at", "assessment", "updated_at"])
-
-    return Response(SkillTasterDetailSerializer(taster).data)
+    return Response(SkillTasterDetailSerializer(taster).data, status=202)
 
 
 @api_view(["GET"])
