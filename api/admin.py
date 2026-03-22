@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from .models import User, UserProfile, Conversation, Message, CareerPath
+from .models import User, UserProfile, Conversation, Message, CareerPath, SkillTaster, TasterResponse
 
 
 @admin.register(User)
@@ -32,3 +32,14 @@ class CareerPathAdmin(admin.ModelAdmin):
 class MessageAdmin(admin.ModelAdmin):
     list_display = ["conversation", "role", "created_at"]
     list_filter = ["role"]
+
+
+@admin.register(SkillTaster)
+class SkillTasterAdmin(admin.ModelAdmin):
+    list_display = ["skill_name", "user", "career_path", "status", "created_at"]
+    list_filter = ["status"]
+
+
+@admin.register(TasterResponse)
+class TasterResponseAdmin(admin.ModelAdmin):
+    list_display = ["skill_taster", "module_id", "time_spent_seconds", "created_at"]

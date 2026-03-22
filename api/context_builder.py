@@ -34,6 +34,43 @@ class ContextBuilder:
         )
         return system_prompt
 
+    def build_for_skill_taster(self, user_profile, career_path, skill_name):
+        profile_data = user_profile.profile_data or {}
+        profile_json = json.dumps(profile_data, indent=2) if profile_data else "{}"
+        system_prompt = _load_prompt("skill_taster").format(
+            profile_data=profile_json,
+            skill_name=skill_name,
+            career_path_title=career_path.title,
+            career_path_description=career_path.description,
+            required_skills=json.dumps(career_path.required_skills),
+        )
+        return system_prompt
+
+    def build_for_assessment(self, user_profile, skill_taster, responses):
+        profile_data = user_profile.profile_data or {}
+        profile_json = json.dumps(profile_data, indent=2) if profile_data else "{}"
+
+        modules = {m["id"]: m for m in skill_taster.taster_content.get("modules", [])}
+        user_responses = []
+        for r in responses:
+            module = modules.get(r.module_id, {})
+            user_responses.append({
+                "module_id": r.module_id,
+                "module_title": module.get("title", "Unknown"),
+                "module_type": module.get("type", "unknown"),
+                "user_response": r.user_response,
+                "time_spent_seconds": r.time_spent_seconds,
+            })
+
+        system_prompt = _load_prompt("assessment").format(
+            profile_data=profile_json,
+            skill_name=skill_taster.skill_name,
+            career_path_title=skill_taster.career_path.title if skill_taster.career_path else "N/A",
+            taster_content=json.dumps(skill_taster.taster_content, indent=2),
+            user_responses=json.dumps(user_responses, indent=2),
+        )
+        return system_prompt
+
     async def _format_messages(self, messages_qs, summary=None):
         # Get last MAX_MESSAGES ordered by created_at
         count = await messages_qs.acount()

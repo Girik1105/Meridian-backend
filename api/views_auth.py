@@ -1,4 +1,7 @@
 from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_decode
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -6,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 
+from .emails import send_password_reset_email
 from .serializers import RegisterSerializer, UserSerializer, UserProfileSerializer
 
 COOKIE_DEFAULTS = {
@@ -117,6 +121,69 @@ def logout(request):
     response.delete_cookie("access", path="/")
     response.delete_cookie("refresh", path="/")
     return response
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def forgot_password(request):
+    email = request.data.get("email")
+    if not email:
+        return Response(
+            {"detail": "Email is required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    User = get_user_model()
+    try:
+        user = User.objects.get(email=email)
+        send_password_reset_email(user)
+    except User.DoesNotExist:
+        pass  # Don't reveal whether the email exists
+
+    return Response(
+        {"detail": "If an account with that email exists, a reset link has been sent."}
+    )
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def reset_password(request):
+    uid = request.data.get("uid")
+    token = request.data.get("token")
+    new_password = request.data.get("new_password")
+
+    if not uid or not token or not new_password:
+        return Response(
+            {"detail": "uid, token, and new_password are required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if len(new_password) < 8:
+        return Response(
+            {"detail": "Password must be at least 8 characters."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    User = get_user_model()
+    try:
+        user_id = urlsafe_base64_decode(uid).decode()
+        user = User.objects.get(pk=user_id)
+    except (ValueError, TypeError, User.DoesNotExist):
+        return Response(
+            {"detail": "Invalid reset link."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if not default_token_generator.check_token(user, token):
+        return Response(
+            {"detail": "Reset link has expired or is invalid."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    user.set_password(new_password)
+    user.save()
+
+    return Response({"detail": "Password has been reset successfully."})
 
 
 @api_view(["GET"])

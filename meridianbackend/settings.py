@@ -159,3 +159,7 @@ ANTHROPIC_API_KEY = config('ANTHROPIC_API_KEY', default='')
 
 # ASGI
 ASGI_APPLICATION = 'meridianbackend.asgi.application'
+
+# Email
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'Meridian <hello@meridian.dev>'
