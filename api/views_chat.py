@@ -143,7 +143,7 @@ async def chat_stream_view(request, conversation_id):
                     async for text in stream.text_stream:
                         full_response += text
                         if not hit_tag:
-                            if "<profile_update>" in full_response:
+                            if "<profile_update>" in full_response or "<ui_widget>" in full_response:
                                 hit_tag = True
                             else:
                                 event = f"data: {json.dumps({'type': 'token', 'data': text})}\n\n"
@@ -176,7 +176,7 @@ async def chat_stream_view(request, conversation_id):
         await claude_task
 
         # Extract structured data and save
-        clean_text, profile_update = extract_structured_data(full_response)
+        clean_text, profile_update, widget_spec = extract_structured_data(full_response)
 
         # Save assistant message with clean text
         assistant_msg = await Message.objects.acreate(
@@ -205,6 +205,9 @@ async def chat_stream_view(request, conversation_id):
             done_data["profile_update"] = profile.profile_data
             done_data["onboarding_completed"] = profile.onboarding_completed
             done_data["journey_stage"] = profile.journey_stage
+
+        if widget_spec:
+            done_data["widget"] = widget_spec
 
         yield f"data: {json.dumps({'type': 'done', 'data': done_data})}\n\n"
 
