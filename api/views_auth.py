@@ -49,7 +49,11 @@ def register(request):
 
     refresh = RefreshToken.for_user(user)
     response = Response(
-        {"user": UserSerializer(user).data},
+        {
+            "user": UserSerializer(user).data,
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+        },
         status=status.HTTP_201_CREATED,
     )
     return _set_auth_cookies(response, refresh)
@@ -78,7 +82,11 @@ def login(request):
         )
 
     refresh = RefreshToken.for_user(user)
-    response = Response({"user": UserSerializer(user).data})
+    response = Response({
+        "user": UserSerializer(user).data,
+        "access": str(refresh.access_token),
+        "refresh": str(refresh),
+    })
     return _set_auth_cookies(response, refresh)
 
 
@@ -86,7 +94,8 @@ def login(request):
 @authentication_classes([])
 @permission_classes([AllowAny])
 def refresh(request):
-    raw_refresh = request.COOKIES.get("refresh")
+    # Accept refresh token from body or cookie
+    raw_refresh = request.data.get("refresh") or request.COOKIES.get("refresh")
     if not raw_refresh:
         return Response(
             {"detail": "No refresh token."},
@@ -113,7 +122,11 @@ def refresh(request):
         )
 
     new_refresh = RefreshToken.for_user(user)
-    response = Response({"detail": "Token refreshed."})
+    response = Response({
+        "detail": "Token refreshed.",
+        "access": str(new_refresh.access_token),
+        "refresh": str(new_refresh),
+    })
     return _set_auth_cookies(response, new_refresh)
 
 
