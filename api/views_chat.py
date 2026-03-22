@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .context_builder import ContextBuilder, extract_structured_data, merge_profile_data
-from .models import Conversation, Message, UserProfile
+from .models import Conversation, Message, UserProfile, SkillTaster
 from .serializers import ChatSendSerializer
 
 logger = logging.getLogger(__name__)
@@ -42,6 +42,7 @@ class ChatSendView(APIView):
             conversation = Conversation.objects.create(
                 user=request.user,
                 conversation_type=data["conversation_type"],
+                metadata=data.get("metadata", {}),
             )
 
         message = Message.objects.create(
@@ -107,6 +108,25 @@ async def chat_stream_view(request, conversation_id):
         system_prompt, conv_messages = await builder.build_for_onboarding(
             profile, messages_qs, summary=conversation.summary
         )
+    elif conversation.conversation_type == "skill_taster":
+        taster_id = (conversation.metadata or {}).get("taster_id")
+        module_id = (conversation.metadata or {}).get("module_id")
+        if taster_id:
+            try:
+                taster = await SkillTaster.objects.select_related("career_path").aget(
+                    id=taster_id, user=user
+                )
+                system_prompt, conv_messages = await builder.build_for_taster_help(
+                    profile, messages_qs, taster, module_id, summary=conversation.summary
+                )
+            except SkillTaster.DoesNotExist:
+                system_prompt, conv_messages = await builder.build_for_onboarding(
+                    profile, messages_qs, summary=conversation.summary
+                )
+        else:
+            system_prompt, conv_messages = await builder.build_for_onboarding(
+                profile, messages_qs, summary=conversation.summary
+            )
     else:
         system_prompt, conv_messages = await builder.build_for_onboarding(
             profile, messages_qs, summary=conversation.summary
