@@ -130,10 +130,13 @@ async def chat_stream_view(request, conversation_id):
                 pass
 
         async def claude_stream():
-            """Stream tokens from Claude and push SSE events onto the queue."""
+            """Stream tokens from Claude, buffering potential XML tags."""
             nonlocal full_response, hit_tag
+            TAGS = ["<profile_update>", "<ui_widget>"]
             try:
                 client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+                pending = ""  # Buffer for text that might be a tag start
+
                 async with client.messages.stream(
                     model="claude-sonnet-4-20250514",
                     max_tokens=2000,
@@ -142,12 +145,62 @@ async def chat_stream_view(request, conversation_id):
                 ) as stream:
                     async for text in stream.text_stream:
                         full_response += text
-                        if not hit_tag:
-                            if "<profile_update>" in full_response or "<ui_widget>" in full_response:
+                        if hit_tag:
+                            continue
+
+                        pending += text
+
+                        # Check if buffer contains a complete tag
+                        found_tag = False
+                        for tag in TAGS:
+                            idx = pending.find(tag)
+                            if idx != -1:
                                 hit_tag = True
-                            else:
-                                event = f"data: {json.dumps({'type': 'token', 'data': text})}\n\n"
-                                await queue.put(event)
+                                found_tag = True
+                                # Send any clean text BEFORE the tag
+                                before = pending[:idx].rstrip("\n")
+                                if before:
+                                    await queue.put(
+                                        f"data: {json.dumps({'type': 'token', 'data': before})}\n\n"
+                                    )
+                                pending = ""
+                                break
+
+                        if found_tag or hit_tag:
+                            continue
+
+                        # Check if the end of pending could be the START of a tag
+                        might_be_tag = False
+                        for tag in TAGS:
+                            for k in range(1, len(tag)):
+                                if pending.endswith(tag[:k]):
+                                    might_be_tag = True
+                                    break
+                            if might_be_tag:
+                                break
+
+                        if might_be_tag:
+                            # Send everything BEFORE the last '<' (safe), keep the rest
+                            last_lt = pending.rfind("<")
+                            if last_lt > 0:
+                                safe = pending[:last_lt]
+                                await queue.put(
+                                    f"data: {json.dumps({'type': 'token', 'data': safe})}\n\n"
+                                )
+                                pending = pending[last_lt:]
+                        else:
+                            # No tag possible — flush entire buffer
+                            await queue.put(
+                                f"data: {json.dumps({'type': 'token', 'data': pending})}\n\n"
+                            )
+                            pending = ""
+
+                # Stream ended — flush any remaining non-tag text
+                if pending and not hit_tag:
+                    await queue.put(
+                        f"data: {json.dumps({'type': 'token', 'data': pending})}\n\n"
+                    )
+
             except Exception as e:
                 logger.exception("Claude API error")
                 await queue.put(

@@ -63,13 +63,15 @@ For open-ended responses that benefit from a larger text area. Fields: type, lab
 For asking 2-3 small related questions in one widget. Fields: type, label, fields (array of sub-widgets, each being a slider/single_select/multi_select/free_text spec)
 
 Rules for widget usage:
-- Only include a widget when your question has a clear structured answer format
-- Do NOT include a widget for open-ended conversational questions ("tell me about yourself", "what excites you about that?")
-- Only ONE widget per response — pick the most important question if you asked multiple
+- STRONGLY PREFER including a widget whenever the question involves choosing from options, rating something, or selecting from a list
+- The ONLY time to omit a widget is for truly open-ended conversational questions where no structured format fits (e.g., "tell me more about that", "what excites you about it?", "can you elaborate?")
+- If your question asks about any of these, you MUST include a widget: education level, interests, confidence, hours/time, budget, timeline, work preferences, learning style, deal breakers, motivations, skills categories
+- Use composite widgets to bundle 2-3 related structured questions into one (e.g., hours + budget, or work setting + team size)
+- Only ONE widget per response — pick the most important question if you asked multiple things
 - The user can always ignore the widget and type freely instead — widgets are input helpers, not gatekeepers
-- Make your conversational text complete on its own — the widget is supplementary, not a replacement for your question
+- Make your conversational text complete on its own — the widget is supplementary
 - For the composite type, limit to 2-3 sub-fields maximum
-- If you didn't include a widget, omit the <ui_widget> tags entirely
+- If you truly didn't ask any structured question this turn, omit the <ui_widget> tags entirely
 
 Examples:
 
@@ -84,6 +86,15 @@ Asking about interests:
 
 Asking about budget AND hours together:
 <ui_widget>{{"type": "composite", "label": "Your learning constraints", "fields": [{{"type": "slider", "label": "Hours per week for learning", "min": 1, "max": 40, "default": 10, "suffix": " hrs", "field": "hours_per_week"}}, {{"type": "single_select", "label": "Learning budget", "options": [{{"label": "Free only", "description": "Only free resources"}}, {{"label": "Under $50/month", "description": "Modest investment"}}, {{"label": "Flexible", "description": "Willing to invest in quality"}}], "field": "budget"}}]}}</ui_widget>
+
+Asking about work environment preferences:
+<ui_widget>{{"type": "composite", "label": "Work environment preferences", "fields": [{{"type": "single_select", "label": "Work setting", "options": [{{"label": "Remote"}}, {{"label": "Hybrid"}}, {{"label": "In-person"}}, {{"label": "No preference"}}], "field": "work_setting"}}, {{"type": "single_select", "label": "Team size", "options": [{{"label": "Solo / freelance"}}, {{"label": "Small team (2-10)"}}, {{"label": "Large organization"}}, {{"label": "No preference"}}], "field": "team_size"}}]}}</ui_widget>
+
+Asking about what motivates them:
+<ui_widget>{{"type": "multi_select", "label": "What matters most to you in a career?", "options": ["Financial stability", "Creativity & self-expression", "Helping others", "Autonomy & independence", "Growth & learning", "Prestige & recognition", "Work-life balance", "Job security", "Variety & novelty"], "field": "motivations"}}</ui_widget>
+
+Asking about skills they already have:
+<ui_widget>{{"type": "free_text", "label": "What tools, technologies, or skills do you already have?", "placeholder": "e.g. Excel, Python, graphic design, customer service, public speaking...", "field": "skills"}}</ui_widget>
 
 Asking an open-ended follow-up about what excites them:
 (no widget — just conversational text, the user types freely)
